@@ -1,7 +1,10 @@
 #!/bin/sh
+set -e
 
-MYSQL_VER="5.6.15-1"
-MROONGA_VER="3.10-1"
+MYSQL_MVER="5.6"
+MYSQL_VER="5.6.19-1"
+MROONGA_VER="4.03"
+MROONGA_REL="2";
 
 yum -y groupinstall 'Development Tools'
 yum -y install http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
@@ -21,15 +24,15 @@ echo '%debug_package %{nil}' >> /root/.rpmmacros
 mkdir -p /tmp/build/rpmbuild/RPMS/x86_64
 cd /tmp/build/rpmbuild/RPMS/x86_64
 echo "Download MySQL packages.."
-wget --progress=bar:force http://ftp.jaist.ac.jp/pub/mysql/Downloads/MySQL-5.6/MySQL-shared-compat-$MYSQL_VER.el6.x86_64.rpm \
-  http://ftp.jaist.ac.jp/pub/mysql/Downloads/MySQL-5.6/MySQL-shared-$MYSQL_VER.el6.x86_64.rpm \
-  http://ftp.jaist.ac.jp/pub/mysql/Downloads/MySQL-5.6/MySQL-server-$MYSQL_VER.el6.x86_64.rpm \
-  http://ftp.jaist.ac.jp/pub/mysql/Downloads/MySQL-5.6/MySQL-devel-$MYSQL_VER.el6.x86_64.rpm \
-  http://ftp.jaist.ac.jp/pub/mysql/Downloads/MySQL-5.6/MySQL-client-$MYSQL_VER.el6.x86_64.rpm 
+wget --progress=bar:force http://ftp.jaist.ac.jp/pub/mysql/Downloads/MySQL-$MYSQL_MVER/MySQL-shared-compat-$MYSQL_VER.el6.x86_64.rpm \
+  http://ftp.jaist.ac.jp/pub/mysql/Downloads/MySQL-$MYSQL_MVER/MySQL-shared-$MYSQL_VER.el6.x86_64.rpm \
+  http://ftp.jaist.ac.jp/pub/mysql/Downloads/MySQL-$MYSQL_MVER/MySQL-server-$MYSQL_VER.el6.x86_64.rpm \
+  http://ftp.jaist.ac.jp/pub/mysql/Downloads/MySQL-$MYSQL_MVER/MySQL-devel-$MYSQL_VER.el6.x86_64.rpm \
+  http://ftp.jaist.ac.jp/pub/mysql/Downloads/MySQL-$MYSQL_MVER/MySQL-client-$MYSQL_VER.el6.x86_64.rpm 
 yum -y localinstall MySQL-shared-compat-5*
 yum -y localinstall MySQL-shared-5* MySQL-server-5* MySQL-devel-5* MySQL-client-5*
 cd /tmp/build/rpmbuild/SRPMS
-wget --progress=bar:force http://ftp.jaist.ac.jp/pub/mysql/Downloads/MySQL-5.6/MySQL-$MYSQL_VER.el6.src.rpm
+wget --progress=bar:force http://ftp.jaist.ac.jp/pub/mysql/Downloads/MySQL-$MYSQL_MVER/MySQL-$MYSQL_VER.el6.src.rpm
 rpm -Uvh MySQL-$MYSQL_VER.el6.src.rpm
 
 /etc/init.d/mysql start
@@ -43,21 +46,28 @@ yum -y install groonga-libs groonga-devel \
   gperf ncurses-devel time zlib-devel
 
 cd /tmp/build
-wget --progress=bar:force http://packages.groonga.org/centos/6/source/SRPMS/mysql-mroonga-$MROONGA_VER.el6.src.rpm
-rpm -ivh mysql-mroonga-*.src.rpm
+wget --progress=bar:force http://packages.groonga.org/centos/6/source/SRPMS/mysql55-mroonga-$MROONGA_VER-$MROONGA_REL.el6.src.rpm
+rpm -ivh mysql55-mroonga-*.src.rpm
 
 cd /tmp/build/rpmbuild/SPECS
-cp mysql-mroonga.spec mysql56-mroonga.spec
 MYSQL_RPM_VER=$(rpm -qa|grep MySQL-server|awk -F '-' '{print $3}')
 MYSQL_RPM_REL=$(rpm -qa|grep MySQL-server|awk -F '-' '{print $4}'|awk -F '.' '{print $1}')
 MYSQL_RPM_DIST=$(rpm -qa|grep MySQL-server|awk -F '-' '{print $4}'|awk -F '.' '{print $2}')
-perl -i -pe "s/mysql_version_default\s+5\.6\.[0-9]+$/mysql_version_default $MYSQL_RPM_VER/g" mysql56-mroonga.spec
-perl -i -pe "s/mysql_release_default\s+[a-z0-9\-_]+$/mysql_release_default $MYSQL_RPM_REL/g" mysql56-mroonga.spec
-perl -i -pe "s/mysql_dist_default\s+[a-z0-9\-_]+$/mysql_dist_default $MYSQL_RPM_DIST/g" mysql56-mroonga.spec
-perl -i -pe "s/mysql_spec_file_default\s+mysql\..+\.spec$/mysql_spec_file_default mysql.spec/g" mysql56-mroonga.spec
-perl -i -pe "s/^Name:\s+mysql-mroonga$/Name: mysql56-mroonga/" mysql56-mroonga.spec
+cp /vagrant/mysql56-mroonga.spec ./
+perl -i -pe "s/<VERSION>/$MROONGA_VER/g" mysql56-mroonga.spec
+perl -i -pe "s/<REL>/$MROONGA_REL/g" mysql56-mroonga.spec
+perl -i -pe "s/<MYSQL_RPM_VER>/$MYSQL_RPM_VER/g" mysql56-mroonga.spec
+perl -i -pe "s/<MYSQL_RPM_REL>/$MYSQL_RPM_REL/g" mysql56-mroonga.spec
+perl -i -pe "s/<MYSQL_RPM_DIST>/$MYSQL_RPM_DIST/g" mysql56-mroonga.spec
+
 cd ..
 rpmbuild -bb SPECS/mysql56-mroonga.spec
+
+rpm -Uvh /tmp/build/rpmbuild/RPMS/x86_64/mysql56-mroonga*.rpm
+echo "== SHOW PLUGINS ==="
+mysql -uroot -e 'SHOW PLUGINS'
+echo "=== SHOW VARIABLES ==="
+mysql -uroot -e "SHOW VARIABLES LIKE 'mroonga_%'"
 
 echo "rpmbuild DONE. move to shared folder"
 
