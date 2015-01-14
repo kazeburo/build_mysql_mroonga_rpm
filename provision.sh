@@ -5,6 +5,7 @@ MYSQL_MVER="5.6"
 MYSQL_VER="5.6.22-1"
 MROONGA_VER="4.09"
 MROONGA_REL="1";
+BUILD_MROONGA_REL="3";
 
 yum -y groupinstall 'Development Tools'
 yum -y install http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
@@ -54,8 +55,9 @@ MYSQL_RPM_VER=$(rpm -qa|grep MySQL-server|awk -F '-' '{print $3}')
 MYSQL_RPM_REL=$(rpm -qa|grep MySQL-server|awk -F '-' '{print $4}'|awk -F '.' '{print $1}')
 MYSQL_RPM_DIST=$(rpm -qa|grep MySQL-server|awk -F '-' '{print $4}'|awk -F '.' '{print $2}')
 cp /vagrant/mysql56-mroonga.spec ./
+cp /vagrant/mroonga-409.patch /tmp/build/rpmbuild/SOURCES
 perl -i -pe "s/<VERSION>/$MROONGA_VER/g" mysql56-mroonga.spec
-perl -i -pe "s/<REL>/$MROONGA_REL/g" mysql56-mroonga.spec
+perl -i -pe "s/<REL>/$BUILD_MROONGA_REL/g" mysql56-mroonga.spec
 perl -i -pe "s/<MYSQL_RPM_VER>/$MYSQL_RPM_VER/g" mysql56-mroonga.spec
 perl -i -pe "s/<MYSQL_RPM_REL>/$MYSQL_RPM_REL/g" mysql56-mroonga.spec
 perl -i -pe "s/<MYSQL_RPM_DIST>/$MYSQL_RPM_DIST/g" mysql56-mroonga.spec

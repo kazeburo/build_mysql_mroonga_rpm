@@ -26,6 +26,7 @@ Requires:       MySQL-server = %{mysql_version}-%{mysql_release}.%{mysql_dist}
 Requires:       MySQL-client = %{mysql_version}-%{mysql_release}.%{mysql_dist}
 Requires:       groonga-libs >= %{groonga_required_version}
 Requires:       groonga-normalizer-mysql
+Patch0:         mroonga-409.patch
 
 %description
 Mroonga is a fast fulltext searchable storage plugin for MySQL.
@@ -42,6 +43,7 @@ Documentation for Mroonga
 
 %prep
 %setup -q -n mroonga-%{version}
+%patch0 -p1
 
 mysql_full_version=%{mysql_version}-%{mysql_release}.%{mysql_dist}
 srpm=MySQL-${mysql_full_version}.src.rpm
